@@ -14,6 +14,13 @@ load_dotenv(find_dotenv())
 
 test_event_code = os.getenv("META_TEST_EVENT_CODE")
 
+PRICE_RANGE_TO_VALUE = {
+    "Moins de 3 000€": 1500,
+    "Entre 3 000€ et 5 000€": 4000,
+    "Entre 5 000€ et 8 000€": 6500,
+    "Plus de 8 000€": 10000,
+}
+
 
 def _normalize_phone(phone: str) -> str:
     return re.sub(r"\D", "", phone)
@@ -51,6 +58,15 @@ def send_meta_lead(
         if normalized_phone:
             user_data["ph"] = _sha256(normalized_phone)
 
+    custom_data = {"currency": "EUR"}
+
+    value = PRICE_RANGE_TO_VALUE.get(contact.priceRange)
+    if value is not None:
+        custom_data["value"] = value
+
+    if contact.destination:
+        custom_data["content_category"] = contact.destination.strip().lower()
+
     payload = {
         "data": [
             {
@@ -59,6 +75,7 @@ def send_meta_lead(
                 "event_id": contact.meta_event_id,
                 "action_source": "website",
                 "user_data": user_data,
+                "custom_data": custom_data,
             }
         ],
     }
